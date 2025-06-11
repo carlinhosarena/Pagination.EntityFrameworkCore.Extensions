@@ -40,47 +40,51 @@ Install-Package Pagination.EntityFrameworkCore.Extensions
 #### Support both asynchronous vs synchronous methods, only "Async" at the end of method name will differentiate.
 ```C#
 
-		// Use only Pagination Model
-  		public async Task<Pagination<Country>> GetCountriesAsync(int page, int limit)
-		{
-			var list  = await _dbContext.Countries.Skip((page - 1) * limit).Take(limit).ToListAsync();
-			var totalItems  = await _dbContext.Countries.CountAsync();
+// Use only Pagination Model
+public async Task<Pagination<Country>> GetCountriesAsync(int page, int limit)
+{
+	var list  = await _dbContext.Countries.Skip((page - 1) * limit).Take(limit).ToListAsync();
+	var totalItems  = await _dbContext.Countries.CountAsync();
+	return new Pagination<Country>(list, totalItems, page, limit);
 
-			return new Pagination<Country>(list, totalItems, page, limit);
-		}
-		
-		// OR use as Entity Framework extension
-		
-		private async Task<Pagination<Country>> GetAllCountriesAsync(int page, int limit)
-		{
-			using (var context = new CollegeDbContext())
-			{
-				return await _dbContext.Countries.AsPaginationAsync<Country>(page, limit, sortColumn: "Name", orderByDescending: true);
-				// OR return await _dbContext.AsPaginationAsync<Country>(page, limit, sortColumn: "Name", orderByDescending: true);
-			}
-		}
-    
-		//OR add filter before pagination
-    
-    		private async Task<Pagination<Country>> GetAllCountriesAsync(int page, int limit)
-		{
-			using (var context = new CollegeDbContext())
-			{
-				return await _dbContext.Countries.Where(x => x.DateAdded > DateTimeOffset.UtcNow.AddDays(-30)).AsPaginationAsync<Country>(page, limit, sortColumn: "Name", orderByDescending: true);
-				
-			}
-		}
-    
-		//OR with supported filter
-    
-    		private async Task<Pagination<Country>> GetAllCountriesAsync(int page, int limit, string searchText)
-		{
-			using (var context = new CollegeDbContext())
-			{
-				return await _dbContext.Countries.AsPaginationAsync<Country>(page, limit, x => x.Name.Contains(searchText), sortColumn: "Name", orderByDescending: true);
-				// OR return await _dbContext.AsPaginationAsync<Country>(page, limit, x => x.Name.Contains(searchText), sortColumn: "Name", orderByDescending: true);
-			}
-		}
+	//OR, there is optional boolean param applyPageAndLimitToResults if you want to apply page and limit to results
+	/*
+	var list  = await _dbContext.Countries.ToListAsync();
+	var totalItems  = await _dbContext.Countries.CountAsync();
+
+	return new Pagination<Country>(list, totalItems, page, limit, applyPageAndLimitToResults: true);
+	
+	*/
+}
+
+// OR use as Entity Framework extension
+private async Task<Pagination<Country>> GetAllCountriesAsync(int page, int limit)
+{
+	using (var context = new CollegeDbContext())
+	{
+		return await _dbContext.Countries.AsPaginationAsync<Country>(page, limit, sortColumn: "Name", orderByDescending: true);
+		// OR return await _dbContext.AsPaginationAsync<Country>(page, limit, sortColumn: "Name", orderByDescending: true);
+	}
+}
+
+//OR add filter before pagination
+private async Task<Pagination<Country>> GetAllCountriesAsync(int page, int limit)
+{
+	using (var context = new CollegeDbContext())
+	{
+		return await _dbContext.Countries.Where(x => x.DateAdded > DateTimeOffset.UtcNow.AddDays(-30)).AsPaginationAsync<Country>(page, limit, sortColumn: "Name", orderByDescending: true);
+	}
+}
+
+//OR with supported filter
+private async Task<Pagination<Country>> GetAllCountriesAsync(int page, int limit, string searchText)
+{
+	using (var context = new CollegeDbContext())
+	{
+		return await _dbContext.Countries.AsPaginationAsync<Country>(page, limit, x => x.Name.Contains(searchText), sortColumn: "Name", orderByDescending: true);
+		// OR return await _dbContext.AsPaginationAsync<Country>(page, limit, x => x.Name.Contains(searchText), sortColumn: "Name", orderByDescending: true);
+	}
+}
     
     
 ```
@@ -88,62 +92,90 @@ Install-Package Pagination.EntityFrameworkCore.Extensions
 ## Auto Mapping or Converting Models:
 
 ```C#
-    		//Create a method that will map/convert source model to destination model.
-		//This method can also be Async.
-		private CountryViewModel ConverCountryToCountryViewModel(Country country)
-		{
-			return new CountryViewModel
-			{
-				name = user.Name,
-				Id = user.Id
-			};
-		}
-		
-		// Use only Pagination Model
-  		public async Task<PaginationAuto<Country, CountryViewModel>> GetCountriesAsync(int page, int limit)
-		{
-			var list  = await _dbContext.Countries.Skip((page - 1) * limit).Take(limit).ToListAsync();
-			var totalItems  = await _dbContext.Countries.CountAsync();
-  			//Pass 'ConverCountryToCountryViewModel' method that will map/convert source model to destination model 
-			return new PaginationAuto<Country, CountryViewModel>(list, totalItems, ConverCountryToCountryViewModel, page, limit);
-		}
-		
-		// OR use as Entity Framework extension
-		
-		private async Task<PaginationAuto<Country, CountryViewModel>> GetAllCountriesAsync(int page, int limit)
-		{
-			using (var context = new CollegeDbContext())
-			{
-				//Pass 'ConverCountryToCountryViewModel' method that will map/convert source model to destination model 
-				return await _dbContext.Countries.AsPaginationAsync<Country, CountryViewModel>(page, limit, ConverCountryToCountryViewModel, sortColumn: "Name", orderByDescending: true);
-				//OR return await _dbContext.AsPaginationAsync<Country, CountryViewModel>(page, limit, ConverCountryToCountryViewModel, sortColumn: "Name", orderByDescending: true);
-			}
-		}
-    
-		//OR add filter before pagination
-    
-    		private async Task<PaginationAuto<Country, CountryViewModel>> GetAllCountriesAsync(int page, int limit)
-		{
-			using (var context = new CollegeDbContext())
-			{
-				//Pass 'ConverCountryToCountryViewModel' method that will map/convert source model to destination model 
-				return await _dbContext.Countries.Where(x => x.DateAdded > DateTimeOffset.UtcNow.AddDays(-30)).AsPaginationAsync<Country, CountryViewModel>(page, limit, ConverCountryToCountryViewModel, sortColumn: "Name", orderByDescending: true);
-				
-			}
-		}
-    
-		//OR with supported filter
-    
-    		private async Task<PaginationAuto<Country, CountryViewModel>> GetAllCountriesAsync(int page, int limit, string searchText)
-		{
-			using (var context = new CollegeDbContext())
-			{
-				//Pass 'ConverCountryToCountryViewModel' method that will map/convert source model to destination model 
-				return await _dbContext.Countries.AsPaginationAsync<Country, CountryViewModel>(page, limit, x => x.Name.Contains(searchText), ConverCountryToCountryViewModel, sortColumn: "Name", orderByDescending: true);
-				//OR return await _dbContext.AsPaginationAsync<Country, CountryViewModel>(page, limit, x => x.Name.Contains(searchText), ConverCountryToCountryViewModel, sortColumn: "Name", orderByDescending: true);
-			}
-		}
+//Create a method that will map/convert source model to destination model.
+//This method can also be Async.
+private CountryViewModel ConverCountryToCountryViewModel(Country country)
+{
+	return new CountryViewModel
+	{
+		name = country.Name,
+		Id = country.Id
+	};
+}
 
+// Use only Pagination Model
+public async Task<Pagination<CountryViewModel>> GetCountriesAsync(int page, int limit)
+{
+	var list  = await _dbContext.Countries.Skip((page - 1) * limit).Take(limit).ToListAsync();
+	var totalItems  = await _dbContext.Countries.CountAsync();
+	//Pass 'ConverCountryToCountryViewModel' method that will map/convert source model to destination model 
+	return new Pagination<CountryViewModel>(list, totalItems, ConverCountryToCountryViewModel, page, limit);
+
+	//OR, there is optional boolean param applyPageAndLimitToResults if you want to apply page and limit to results
+	/*
+	var list  = await _dbContext.Countries.ToListAsync();
+	var totalItems  = await _dbContext.Countries.CountAsync();
+	return Pagination<Country>.GetPagination<Country, CountryViewModel>(results, totalItems, x => ConverCountryToCountryViewModel(x), page, limit, applyPageAndLimitToResults: true);
+	*/
+}
+
+// OR use as Entity Framework extension
+private async Task<Pagination<CountryViewModel>> GetAllCountriesAsync(int page, int limit)
+{
+	using (var context = new CollegeDbContext())
+	{
+		//Pass 'ConverCountryToCountryViewModel' method that will map/convert source model to destination model 
+		return await _dbContext.Countries.AsPaginationAsync<Country, CountryViewModel>(page, limit, x => ConverCountryToCountryViewModel(x), sortColumn: "Name", orderByDescending: true);
+		//OR return await _dbContext.AsPaginationAsync<Country, CountryViewModel>(page, limit, x => ConverCountryToCountryViewModel(x), sortColumn: "Name", orderByDescending: true);
+	}
+}
+
+//OR add filter before pagination
+private async Task<Pagination<CountryViewModel>> GetAllCountriesAsync(int page, int limit)
+{
+	using (var context = new CollegeDbContext())
+	{
+		//Pass 'ConverCountryToCountryViewModel' method that will map/convert source model to destination model 
+		return await _dbContext.Countries.Where(x => x.DateAdded > DateTimeOffset.UtcNow.AddDays(-30)).AsPaginationAsync<Country, CountryViewModel>(page, limit, x => ConverCountryToCountryViewModel(x), sortColumn: "Name", orderByDescending: true);
+		
+	}
+}
+
+//OR with supported filter
+private async Task<Pagination<CountryViewModel>> GetAllCountriesAsync(int page, int limit, string searchText)
+{
+	using (var context = new CollegeDbContext())
+	{
+		//Pass 'ConverCountryToCountryViewModel' method that will map/convert source model to destination model 
+		return await _dbContext.Countries.AsPaginationAsync<Country, CountryViewModel>(page, limit, x => x.Name.Contains(searchText), x => ConverCountryToCountryViewModel(x), sortColumn: "Name", orderByDescending: true);
+		//OR return await _dbContext.AsPaginationAsync<Country, CountryViewModel>(page, limit, x => x.Name.Contains(searchText), x => ConverCountryToCountryViewModel(x), sortColumn: "Name", orderByDescending: true);
+	}
+}
+
+// With extra parameter/s
+private async Task<CountryViewModel> ConverCountryToCountryViewModelAsync(Country country, Guid userId)
+{
+//Some async processing like sending audit log somewhere
+/*
+	await _someLoggingService.LogAsync(userId, country);
+*/
+	return new CountryViewModel
+	{
+		name = country.Name,
+		Id = country.Id
+	};
+}
+//Then auto map like this:
+private async Task<Pagination<CountryViewModel>> GetAllCountriesAsync(int page, int limit, string searchText)
+{
+	using (var context = new CollegeDbContext())
+	{
+		//Pass 'ConverCountryToCountryViewModelAsync' method that will map/convert source model to destination model 
+		return await _dbContext.Countries.AsPaginationAsync<Country, CountryViewModel>(page, limit, x => x.Name.Contains(searchText), x => ConverCountryToCountryViewModelAsync(x, Guid.Empty), sortColumn: "Name", orderByDescending: true);
+		//OR return await _dbContext.AsPaginationAsync<Country, CountryViewModel>(page, limit, x => x.Name.Contains(searchText),  x => ConverCountryToCountryViewModelAsync(x, Guid.Empty), sortColumn: "Name", orderByDescending: true);
+	}
+}
+		
 		
 ```
 
